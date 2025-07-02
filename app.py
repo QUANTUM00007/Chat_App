@@ -1,7 +1,6 @@
 from flask import Flask
-from flask_pymongo import PyMongo
-from flask_login import LoginManager
-from bson.objectid import ObjectId
+from extensions import mongo, login_manager
+from bson.objectid import ObjectId, InvalidId
 from models import User
 from routes.auth_routes import auth_bp
 from routes.main_routes import main_bp
@@ -10,19 +9,18 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'
 app.config['MONGO_URI'] = 'mongodb://localhost:27017/chat_db'
 
-# Initialize MongoDB
-mongo = PyMongo(app)
-
-login_manager = LoginManager()
+mongo.init_app(app)
 login_manager.login_view = 'auth.login'
 login_manager.init_app(app)
 
 @login_manager.user_loader
 def load_user(user_id):
-    user_data = mongo.db.users.find_one({'_id': ObjectId(user_id)})
-    if user_data:
-        return User(user_data)
-    return None
+    try:
+        user_data = mongo.db.users.find_one({'_id': ObjectId(user_id)})
+        if user_data:
+            return User(user_data)
+    except (InvalidId, TypeError):
+        return None
 
 # Register Blueprints
 app.register_blueprint(auth_bp)

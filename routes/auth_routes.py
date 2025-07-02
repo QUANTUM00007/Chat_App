@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, flash
 from flask_login import login_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import User
-from app import mongo 
+from extensions import mongo
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -16,7 +16,8 @@ def register():
             flash('Username already exists.')
             return redirect('/register')
 
-        user_id = mongo.db.users.insert_one({'username': username, 'password': password})
+        result = mongo.db.users.insert_one({'username': username, 'password': password})
+        user_id = result.inserted_id
         user = User({'_id': user_id, 'username': username})
         login_user(user)
         return redirect('/')
